@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root, .App, .file-drop-target {
+  height: 100%;
+  width: 100%;
+}
+
+.file-drop-dragging-over-target {
+  opacity: 0.6
+}
