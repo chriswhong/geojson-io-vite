@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "prettier . --write"
   },
   "dependencies": {
     "@mapbox/geojson-normalize": "^0.0.1",
@@ -22,6 +23,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-file-drop": "^3.1.6",
+    "store": "^2.0.12",
     "topojson-client": "^3.1.0"
   },
   "devDependencies": {

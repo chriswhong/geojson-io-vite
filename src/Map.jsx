@@ -1,7 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useContext } from 'react'
 import mapboxgl from 'mapbox-gl'
 import mapboxGeocoder from '@mapbox/mapbox-gl-geocoder'
-import bbox from '@turf/bbox'
 
 import 'mapbox-gl/dist/mapbox-gl.css'
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css'
@@ -13,98 +12,56 @@ import {
     DEFAULT_LIGHT_FEATURE_COLOR,
     DEFAULT_SATELLITE_FEATURE_COLOR
 } from './constants'
+import { useAppContext } from './AppContext'
+import { addIds, zoomextent, dummyGeojson} from './map-utils'
 
 mapboxgl.accessToken = accessToken
 
-const addIds = (geojson) => {
-    return {
-      ...geojson,
-      features: geojson.features.map((feature, i) => {
-        return {
-          ...feature,
-          id: i
-        };
-      })
-    };
-  };
 
-  const zoomextent = function (geojson, map) {
-    // if the data is a single point, flyTo()
-    if (
-      geojson.features.filter((feature) => feature.geometry).length === 1 &&
-      geojson.features[0].geometry.type === 'Point'
-    ) {
-      map.flyTo({
-        center: geojson.features[0].geometry.coordinates,
-        zoom: 6,
-        duration: 1000
-      });
-    } else {
-      const bounds = bbox(geojson);
-      map.fitBounds(bounds, {
-        padding: 50,
-        duration: 1000
-      });
-    }
-  };
-  
-  
-
-const dummyGeojson = {
-    type: 'FeatureCollection',
-    features: [
-      {
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [0, 0]
-        }
-      }
-    ]
-  };
-
-const Map = ({ data, recovery }) => {
-    console.log('DATA', data)
+const Map = () => {
     const mapContainer = useRef(null)
     const geocoderRef = useRef(null)
-    const [styleLoaded, setStyleLoaded] = useState(false)
 
-    let mapRef = useRef(null)
+    const {
+        mapData: data,
+        recovery,
+        setRecovery,
+        map,
+        setMap,
+        styleLoaded,
+        setStyleLoaded
+    } = useAppContext()
 
-    if (!mapRef) {
-        mapRef = useRef(null)
-    }
 
     useEffect(() => {
-        console.log('mapeffect')
-        const map = (mapRef.current = new mapboxgl.Map({
+        const theMap = new mapboxgl.Map({
             container: mapContainer.current,
             style: 'mapbox://styles/mapbox/streets-v12',
             center: [0, 0],
             zoom: 2,
             accessToken,
             hash: true
-        }))
+        })
 
         const geocoder = new mapboxGeocoder({
             accessToken: mapboxgl.accessToken,
             mapboxgl: mapboxgl
         })
-        map.addControl(geocoder)
+        theMap.addControl(geocoder)
 
         if (geocoderRef) {
             geocoderRef.current = geocoder
         }
 
-        map.addControl(new mapboxgl.NavigationControl())
+        theMap.addControl(new mapboxgl.NavigationControl())
 
-        map.on('load', () => {
+        theMap.on('load', () => {
             setStyleLoaded(true)
 
             if (
-                !map.getSource('map-data')
+                !theMap.getSource('map-data')
             ) {
-                const { name } = map.getStyle();
+                const { name } = theMap.getStyle();
 
                 let color = DEFAULT_DARK_FEATURE_COLOR; // Sets default dark color for lighter base maps
 
@@ -120,7 +77,7 @@ const Map = ({ data, recovery }) => {
 
                 // setFog only on Light and Dark
                 if (['Mapbox Light', 'Mapbox Dark', 'osm'].includes(name)) {
-                    map.setFog({
+                    theMap.setFog({
                         range: [0.5, 10],
                         color: '#ffffff',
                         'high-color': '#245cdf',
@@ -154,12 +111,12 @@ const Map = ({ data, recovery }) => {
                     });
                 }
 
-                map.addSource('map-data', {
+                theMap.addSource('map-data', {
                     type: 'geojson',
                     data: dummyGeojson
                 });
 
-                map.addLayer({
+                theMap.addLayer({
                     id: 'map-data-fill',
                     type: 'fill',
                     source: 'map-data',
@@ -170,7 +127,7 @@ const Map = ({ data, recovery }) => {
                     filter: ['==', ['geometry-type'], 'Polygon']
                 });
 
-                map.addLayer({
+                theMap.addLayer({
                     id: 'map-data-fill-outline',
                     type: 'line',
                     source: 'map-data',
@@ -182,7 +139,7 @@ const Map = ({ data, recovery }) => {
                     filter: ['==', ['geometry-type'], 'Polygon']
                 });
 
-                map.addLayer({
+                theMap.addLayer({
                     id: 'map-data-line',
                     type: 'line',
                     source: 'map-data',
@@ -197,20 +154,20 @@ const Map = ({ data, recovery }) => {
             }
         });
 
+        setMap(theMap)
     }, [])
 
+    // if map is loaded and data is available, update the map to reflect the data
     useEffect(() => {
-        console.log('effect', data)
 
         if (!data || !styleLoaded) return
-        
+
 
         const geojson = data
-        console.log('effect2', geojson, mapRef.current.getSource('map-data'))
 
         if (!geojson) return;
 
-        const workingDatasetSource = mapRef.current.getSource('map-data');
+        const workingDatasetSource = map.getSource('map-data');
 
         if (workingDatasetSource) {
             const filteredFeatures = geojson.features.filter(
@@ -223,10 +180,8 @@ const Map = ({ data, recovery }) => {
             workingDatasetSource.setData(addIds(filteredGeojson));
             // addMarkers(filteredGeojson, context, writable);
             if (recovery) {
-                zoomextent(filteredGeojson, mapRef.current);
-                // context.data.set({
-                //     recovery: false
-                // });
+                zoomextent(filteredGeojson, map);
+                setRecovery(false)
             }
         }
     }, [data, styleLoaded])
