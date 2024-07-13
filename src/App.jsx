@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { FileDrop } from 'react-file-drop'
 import cloneDeep from 'lodash/cloneDeep';
 
@@ -40,8 +40,12 @@ const dataHelpers = {
 }
 
 function App() {
-
-  const [data, setData] = useState()
+  const [dirty, setDirty] = useState()
+  const [mapData, setMapData] = useState()
+  const [meta, setMeta] = useState()
+  const [recovery, setRecovery] = useState(false)
+  const [source, setSource] = useState()
+  const [type, setType] = useState()
 
   useEffect(() => {
     const query = qs.stringQs(location.hash.split('#')[1] || '');
@@ -49,30 +53,34 @@ function App() {
     if (location.hash !== '#new' && !query.id && !query.data) {
       const rec = JSON.parse(localStorage.getItem('recover'))
       if (rec && confirm('recover your map from the last time you edited?')) {
-        setData({
-          ...rec,
-          recovery: true
-        });
+        setDirty(rec.dirty)
+        setMapData(rec.map)
+        setMeta(rec.meta)
+        setSource(rec.source)
+        setType(rec.type)
+
+        setRecovery(true)
       } else {
         localStorage.removeItem('recover');
       }
     }
   }, [])
 
-  console.log(data)
+  console.log('mapData', mapData)
 
   return (
     <FileDrop
       className='App'
       onDrop={(files) => {
         readDrop(files, (err, gj, warning) => {
+          console.log('here', err)
           if (err && err.message) {
             // flash(context.container, err.message).classed('error', 'true');
           }
           if (gj && gj.features) {
-            const newFC = dataHelpers.mergeFeatures(gj.features, featureCollection);
-            setFeatureCollection(newFC)
-            
+            const newFC = dataHelpers.mergeFeatures(gj.features, mapData);
+            setMapData(newFC)
+
             if (warning) {
               // flash(context.container, warning.message);
             } else {
@@ -112,10 +120,10 @@ function App() {
         </div>
         <div className='ui-container flex-grow flex'>
           <div className='flex-grow'>
-            <Map data={data} />
+            <Map data={mapData} recovery={recovery} />
           </div>
           <div className='right w-1/3'>
-            {JSON.stringify(data?.map, null, 2)}
+            {JSON.stringify(mapData, null, 2)}
           </div>
         </div>
       </div>

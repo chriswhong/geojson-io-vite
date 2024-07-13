@@ -1,10 +1,10 @@
-  import * as topojson from 'topojson-client'
-  import * as toGeoJSON from '@tmcw/togeojson'
-  import gtfs2geojson from './gtfs2geojson'
-  import csv2geojson from 'csv2geojson'
-  import osmtogeojson from 'osmtogeojson'
-  import polytogeojson from 'polytogeojson'
-  import geojsonNormalize from '@mapbox/geojson-normalize'
+import * as topojson from 'topojson-client'
+import * as toGeoJSON from '@tmcw/togeojson'
+import gtfs2geojson from './gtfs2geojson'
+import csv2geojson from 'csv2geojson'
+import osmtogeojson from 'osmtogeojson'
+import polytogeojson from 'polytogeojson'
+import geojsonNormalize from '@mapbox/geojson-normalize'
 
 export function readDrop(files, callback) {
   return function () {
@@ -12,27 +12,27 @@ export function readDrop(files, callback) {
     const errors = [];
 
     Array.from(files).forEach((f, i) => {
-        const isLastFile = i === files.length - 1
-        readAsText(f, (err, text) => {
-          if (err) {
-            errors.push(err);
-            if (isLastFile) finish(errors, results);
-            
-          } else {
-            readFile(f, text, (err, res, war) => {
-              if (err) errors.push(err);
-              if (res) results.push(res);
-              if (war) results.push(war);
-              if (isLastFile) finish(errors, results, war);
-            });
-          }
-        });
+      const isLastFile = i === files.length - 1
+      readAsText(f, (err, text) => {
+        if (err) {
+          errors.push(err);
+          if (isLastFile) finish(errors, results);
+
+        } else {
+          readFile(f, text, (err, res, war) => {
+            if (err) errors.push(err);
+            if (res) results.push(res);
+            if (war) results.push(war);
+            if (isLastFile) finish(errors, results, war);
+          });
+        }
       });
- 
+    });
+
     //   return callback({
     //     message: 'No files were dropped'
     //   });
-    
+
 
     function finish(errors, results, war) {
       // if no conversions suceeded, return the first error
@@ -121,6 +121,7 @@ function readFile(f, text, callback) {
   } else if (fileType === 'geojson') {
     try {
       const gj = JSON.parse(text);
+      console.log('gj', gj)
       if (gj && gj.type === 'Topology' && gj.objects) {
         const collection = { type: 'FeatureCollection', features: [] };
         for (const o in gj.objects) {
@@ -131,6 +132,7 @@ function readFile(f, text, callback) {
         }
         return callback(null, collection);
       } else {
+        console.log('returning')
         return callback(null, gj);
       }
     } catch (err) {

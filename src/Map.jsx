@@ -63,7 +63,7 @@ const dummyGeojson = {
     ]
   };
 
-const Map = ({ data }) => {
+const Map = ({ data, recovery }) => {
     console.log('DATA', data)
     const mapContainer = useRef(null)
     const geocoderRef = useRef(null)
@@ -205,7 +205,7 @@ const Map = ({ data }) => {
         if (!data || !styleLoaded) return
         
 
-        const geojson = data.map
+        const geojson = data
         console.log('effect2', geojson, mapRef.current.getSource('map-data'))
 
         if (!geojson) return;
@@ -222,7 +222,7 @@ const Map = ({ data }) => {
             };
             workingDatasetSource.setData(addIds(filteredGeojson));
             // addMarkers(filteredGeojson, context, writable);
-            if (data.recovery) {
+            if (recovery) {
                 zoomextent(filteredGeojson, mapRef.current);
                 // context.data.set({
                 //     recovery: false
