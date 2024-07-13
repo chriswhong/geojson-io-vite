@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState, useEffect } from 'react'
 import { FileDrop } from 'react-file-drop'
 import cloneDeep from 'lodash/cloneDeep';
 
 import { readDrop } from './readfile'
 import './App.css'
 import Map from './Map.jsx'
+import qs from 'qs-hash'
+
 
 const dataHelpers = {
   mergeFeatures: (features, featureCollection, src) => {
@@ -41,12 +41,25 @@ const dataHelpers = {
 
 function App() {
 
-  const [featureCollection, setFeatureCollection] = useState({
-    type: 'FeatureCollection',
-    features: []
-  })
+  const [data, setData] = useState()
 
-  console.log(featureCollection)
+  useEffect(() => {
+    const query = qs.stringQs(location.hash.split('#')[1] || '');
+
+    if (location.hash !== '#new' && !query.id && !query.data) {
+      const rec = JSON.parse(localStorage.getItem('recover'))
+      if (rec && confirm('recover your map from the last time you edited?')) {
+        setData({
+          ...rec,
+          recovery: true
+        });
+      } else {
+        localStorage.removeItem('recover');
+      }
+    }
+  }, [])
+
+  console.log(data)
 
   return (
     <FileDrop
@@ -99,10 +112,10 @@ function App() {
         </div>
         <div className='ui-container flex-grow flex'>
           <div className='flex-grow'>
-            <Map />
+            <Map data={data} />
           </div>
           <div className='right w-1/3'>
-            {JSON.stringify(featureCollection, null, 2)}
+            {JSON.stringify(data?.map, null, 2)}
           </div>
         </div>
       </div>
