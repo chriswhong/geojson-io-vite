@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { dummyGeojson } from './map-utils.js';
 import AppContext from "./AppContext.jsx";
-import store from 'store'
-
+import store from "store";
 
 export const AppContextProvider = ({ children }) => {
-  const [dirty, setDirty] = useState(false)
-  const [map, setMap] = useState()
-  const [styleLoaded, setStyleLoaded] = useState(false)
+  const [dirty, setDirty] = useState(false);
+  const [map, setMap] = useState();
+  const [styleLoaded, setStyleLoaded] = useState(false);
   const [mapData, setMapData] = useState({
-    type: 'FeatureCollection',
-    features: []
-  })
-  const [meta, setMeta] = useState()
-  const [recovery, setRecovery] = useState(false)
-  const [source, setSource] = useState()
-  const [type, setType] = useState('local')
+    type: "FeatureCollection",
+    features: [],
+  });
+  const [meta, setMeta] = useState();
+  const [recovery, setRecovery] = useState(false);
+  const [source, setSource] = useState();
+  const [type, setType] = useState("local");
 
   const allData = () => {
     return {
@@ -26,9 +24,9 @@ export const AppContextProvider = ({ children }) => {
       meta,
       recovery,
       source,
-      type
-    }
-  }
+      type,
+    };
+  };
 
   const value = {
     dirty,
@@ -48,16 +46,12 @@ export const AppContextProvider = ({ children }) => {
     type,
     setType,
     allData,
-    store
-  }
+    store,
+  };
 
   useEffect(() => {
-    console.log('appcontext updated', allData())
-  })
+    console.log("appcontext updated", allData());
+  });
 
-  return (
-    <AppContext.Provider value={value}>
-      {children}
-    </AppContext.Provider>
-  );
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

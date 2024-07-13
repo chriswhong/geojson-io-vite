@@ -1,6 +1,5 @@
 import { createContext, useContext } from "react";
 
-
 const AppContext = createContext(undefined);
 
 export const useAppContext = () => {

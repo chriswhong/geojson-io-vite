@@ -1,10 +1,10 @@
-import * as topojson from 'topojson-client'
-import * as toGeoJSON from '@tmcw/togeojson'
-import gtfs2geojson from './gtfs2geojson'
-import csv2geojson from 'csv2geojson'
-import osmtogeojson from 'osmtogeojson'
-import polytogeojson from 'polytogeojson'
-import geojsonNormalize from '@mapbox/geojson-normalize'
+import * as topojson from "topojson-client";
+import * as toGeoJSON from "@tmcw/togeojson";
+import gtfs2geojson from "./gtfs2geojson";
+import csv2geojson from "csv2geojson";
+import osmtogeojson from "osmtogeojson";
+import polytogeojson from "polytogeojson";
+import geojsonNormalize from "@mapbox/geojson-normalize";
 
 export function readDrop(files, callback) {
   return function () {
@@ -12,12 +12,11 @@ export function readDrop(files, callback) {
     const errors = [];
 
     Array.from(files).forEach((f, i) => {
-      const isLastFile = i === files.length - 1
+      const isLastFile = i === files.length - 1;
       readAsText(f, (err, text) => {
         if (err) {
           errors.push(err);
           if (isLastFile) finish(errors, results);
-
         } else {
           readFile(f, text, (err, res, war) => {
             if (err) errors.push(err);
@@ -33,7 +32,6 @@ export function readDrop(files, callback) {
     //     message: 'No files were dropped'
     //   });
 
-
     function finish(errors, results, war) {
       // if no conversions suceeded, return the first error
       if (!results.length && errors.length)
@@ -42,16 +40,16 @@ export function readDrop(files, callback) {
       return callback(
         null,
         {
-          type: 'FeatureCollection',
+          type: "FeatureCollection",
           features: results.reduce((memo, r) => {
             r = geojsonNormalize(r);
             if (r) {
               memo = memo.concat(r.features);
             }
             return memo;
-          }, [])
+          }, []),
         },
-        war
+        war,
       );
     }
   };
@@ -65,17 +63,17 @@ function readAsText(f, callback) {
       if (e.target && e.target.result) callback(null, e.target.result);
       else
         callback({
-          message: 'Dropped file could not be loaded'
+          message: "Dropped file could not be loaded",
         });
     };
     reader.onerror = function () {
       callback({
-        message: 'Dropped file was unreadable'
+        message: "Dropped file was unreadable",
       });
     };
   } catch (e) {
     callback({
-      message: 'Dropped file was unreadable'
+      message: "Dropped file was unreadable",
     });
   }
 }
@@ -85,29 +83,29 @@ function readFile(f, text, callback) {
 
   if (!fileType) {
     return callback({
-      message: 'Could not detect file type'
+      message: "Could not detect file type",
     });
-  } else if (fileType === 'kml') {
+  } else if (fileType === "kml") {
     const kmldom = toDom(text);
     if (!kmldom) {
       return callback({
-        message: 'Invalid KML file: not valid XML'
+        message: "Invalid KML file: not valid XML",
       });
     }
     let warning;
-    if (kmldom.getElementsByTagName('NetworkLink').length) {
+    if (kmldom.getElementsByTagName("NetworkLink").length) {
       warning = {
         message:
-          'The KML file you uploaded included NetworkLinks: some content may not display. ' +
-          'Please export and upload KML without NetworkLinks for optimal performance'
+          "The KML file you uploaded included NetworkLinks: some content may not display. " +
+          "Please export and upload KML without NetworkLinks for optimal performance",
       };
     }
     callback(null, toGeoJSON.kml(kmldom), warning);
-  } else if (fileType === 'xml') {
+  } else if (fileType === "xml") {
     const xmldom = toDom(text);
     if (!xmldom) {
       return callback({
-        message: 'Invalid XML file: not valid XML'
+        message: "Invalid XML file: not valid XML",
       });
     }
     const result = osmtogeojson.toGeojson(xmldom);
@@ -116,14 +114,13 @@ function readFile(f, text, callback) {
       feature.properties = feature.properties.tags;
     });
     callback(null, result);
-  } else if (fileType === 'gpx') {
+  } else if (fileType === "gpx") {
     callback(null, toGeoJSON.gpx(toDom(text)));
-  } else if (fileType === 'geojson') {
+  } else if (fileType === "geojson") {
     try {
       const gj = JSON.parse(text);
-      console.log('gj', gj)
-      if (gj && gj.type === 'Topology' && gj.objects) {
-        const collection = { type: 'FeatureCollection', features: [] };
+      if (gj && gj.type === "Topology" && gj.objects) {
+        const collection = { type: "FeatureCollection", features: [] };
         for (const o in gj.objects) {
           const ft = topojson.feature(gj, gj.objects[o]);
           if (ft.features)
@@ -132,83 +129,82 @@ function readFile(f, text, callback) {
         }
         return callback(null, collection);
       } else {
-        console.log('returning')
         return callback(null, gj);
       }
     } catch (err) {
-      alert('Invalid JSON file: ' + err);
+      alert("Invalid JSON file: " + err);
       return;
     }
-  } else if (fileType === 'dsv') {
+  } else if (fileType === "dsv") {
     csv2geojson.csv2geojson(
       text,
       {
-        delimiter: 'auto'
+        delimiter: "auto",
       },
       (err, result) => {
         if (err) {
           return callback({
-            type: 'geocode',
+            type: "geocode",
             result: result,
-            raw: text
+            raw: text,
           });
         } else {
           return callback(null, result);
         }
-      }
+      },
     );
-  } else if (fileType === 'gtfs-shapes') {
+  } else if (fileType === "gtfs-shapes") {
     try {
       return callback(null, gtfs2geojson.lines(text));
     } catch (e) {
-      return callback({ message: 'Invalid GTFS shapes.txt file' });
+      return callback({ message: "Invalid GTFS shapes.txt file" });
     }
-  } else if (fileType === 'gtfs-stops') {
+  } else if (fileType === "gtfs-stops") {
     try {
       return callback(null, gtfs2geojson.stops(text));
     } catch (e) {
-      return callback({ message: 'Invalid GTFS stops.txt file' });
+      return callback({ message: "Invalid GTFS stops.txt file" });
     }
-  } else if (fileType === 'poly') {
+  } else if (fileType === "poly") {
     callback(null, polytogeojson(text));
   }
 
   function toDom(x) {
-    return new DOMParser().parseFromString(x, 'text/xml');
+    return new DOMParser().parseFromString(x, "text/xml");
   }
 
   function detectType(f, text) {
-    const filename = f.name ? f.name.toLowerCase() : '';
+    const filename = f.name ? f.name.toLowerCase() : "";
     function ext(_) {
       return filename.indexOf(_) !== -1;
     }
-    if (f.type === 'application/vnd.google-earth.kml+xml' || ext('.kml')) {
-      return 'kml';
+    if (f.type === "application/vnd.google-earth.kml+xml" || ext(".kml")) {
+      return "kml";
     }
-    if (ext('.gpx')) return 'gpx';
-    if (ext('.geojson') || ext('.json') || ext('.topojson')) return 'geojson';
-    if (f.type === 'text/csv' || ext('.csv') || ext('.tsv') || ext('.dsv')) {
-      return 'dsv';
+    if (ext(".gpx")) return "gpx";
+    if (ext(".geojson") || ext(".json") || ext(".topojson")) return "geojson";
+    if (f.type === "text/csv" || ext(".csv") || ext(".tsv") || ext(".dsv")) {
+      return "dsv";
     }
-    if (ext('.xml') || ext('.osm')) return 'xml';
-    if (ext('.poly')) return 'poly';
+    if (ext(".xml") || ext(".osm")) return "xml";
+    if (ext(".poly")) return "poly";
     if (
-      (text && text.indexOf('shape_id,shape_pt_lat,shape_pt_lon') !== -1) ||
+      (text && text.indexOf("shape_id,shape_pt_lat,shape_pt_lon") !== -1) ||
       (text && text.indexOf('"shape_id","shape_pt_lat","shape_pt_lon"') !== -1)
     ) {
-      return 'gtfs-shapes';
+      return "gtfs-shapes";
     }
     if (
       (text &&
         text.indexOf(
-          'stop_id,stop_code,stop_name,stop_desc,stop_lat,stop_lon'
+          "stop_id,stop_code,stop_name,stop_desc,stop_lat,stop_lon",
         ) !== -1) ||
       (text &&
         text.indexOf(
-          '"stop_id","stop_code","stop_name","stop_desc","stop_lat","stop_lon"'
+          '"stop_id","stop_code","stop_name","stop_desc","stop_lat","stop_lon"',
         ) !== -1)
     ) {
-      return 'gtfs-stops';
+      return "gtfs-stops";
     }
   }
 }

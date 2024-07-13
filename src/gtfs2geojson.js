@@ -18,7 +18,7 @@
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-import * as d3dsv from 'd3-dsv'
+import * as d3dsv from "d3-dsv";
 const csvParse = d3dsv.csvParse;
 
 const gtfs2geojson = {
@@ -36,16 +36,16 @@ const gtfs2geojson = {
     }, {});
 
     return {
-      type: 'FeatureCollection',
+      type: "FeatureCollection",
       features: Object.keys(shapes).map((id) => {
         return {
-          type: 'Feature',
+          type: "Feature",
           id: id,
           properties: {
-            shape_id: id
+            shape_id: id,
           },
           geometry: {
-            type: 'LineString',
+            type: "LineString",
             coordinates: shapes[id]
               .sort((a, b) => {
                 return +a.shape_pt_sequence - b.shape_pt_sequence;
@@ -53,12 +53,12 @@ const gtfs2geojson = {
               .map((coord) => {
                 return [
                   parseFloat(coord.shape_pt_lon),
-                  parseFloat(coord.shape_pt_lat)
+                  parseFloat(coord.shape_pt_lat),
                 ];
-              })
-          }
+              }),
+          },
         };
-      })
+      }),
     };
   },
 
@@ -74,26 +74,26 @@ const gtfs2geojson = {
   stops: function (gtfs) {
     const stops = csvParse(gtfs);
     return {
-      type: 'FeatureCollection',
+      type: "FeatureCollection",
       features: Object.keys(stops).map((id) => {
         return {
-          type: 'Feature',
+          type: "Feature",
           id: stops[id].stop_id,
           properties: {
             stop_id: stops[id].stop_id,
-            stop_name: stops[id].stop_name
+            stop_name: stops[id].stop_name,
           },
           geometry: {
-            type: 'Point',
+            type: "Point",
             coordinates: [
               parseFloat(stops[id].stop_lon),
-              parseFloat(stops[id].stop_lat)
-            ]
-          }
+              parseFloat(stops[id].stop_lat),
+            ],
+          },
         };
-      })
+      }),
     };
-  }
+  },
 };
 
 export default gtfs2geojson;
