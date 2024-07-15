@@ -8,7 +8,6 @@ import DrawCircle from "./draw/circle";
 import SimpleSelect from "./draw/simple_select";
 import ExtendDrawBar from "./draw/extend_draw_bar";
 import drawStyles from "./draw/styles";
-import geojsonRewind from "@mapbox/geojson-rewind";
 
 import { EditControl, SaveCancelControl, TrashControl } from "./controls";
 
@@ -30,7 +29,7 @@ mapboxgl.accessToken = accessToken;
 const Map = () => {
   const {
     mapData: data,
-    setMapData: _setMapData,
+    appendMapData,
     recovery,
     setRecovery,
     map,
@@ -41,27 +40,9 @@ const Map = () => {
 
   const mapContainer = useRef(null);
   const drawRef = useRef();
-  const mapDataRef = useRef(data);
 
   const [drawing, setDrawing] = useState(false);
 
-  const setMapData = (d) => {
-    mapDataRef.current = d;
-    _setMapData(d);
-  };
-
-  const update = useCallback(
-    (features) => {
-      let FC = {
-        type: "FeatureCollection",
-        features: [...mapDataRef.current.features, ...features],
-      };
-
-      FC = geojsonRewind(FC);
-      setMapData(FC);
-    },
-    [data],
-  );
 
   const stripIds = (features) => {
     return features.map((feature) => {
@@ -73,7 +54,7 @@ const Map = () => {
   const created = useCallback(
     (e) => {
       drawRef.current.deleteAll();
-      update(stripIds(e.features));
+      appendMapData(stripIds(e.features));
 
       // delay setting drawing back to false after a drawn feature is created
       // this allows the map click handler to ignore the click and prevents a popup
