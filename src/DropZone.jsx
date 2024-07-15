@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import React from "react";
 import { FileDrop } from "react-file-drop";
 import { readDrop } from "./readfile";
@@ -65,6 +66,10 @@ const DropZone = ({ children }) => {
       {children}
     </FileDrop>
   );
+};
+
+DropZone.propTypes = {
+  children: PropTypes.any,
 };
 
 export default DropZone;

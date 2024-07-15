@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import React, { useState, useEffect } from "react";
 import AppContext from "./AppContext.jsx";
 import store from "store";
@@ -51,7 +52,11 @@ export const AppContextProvider = ({ children }) => {
 
   useEffect(() => {
     console.log("appcontext updated", allData());
-  });
+  }, [dirty, map, styleLoaded, mapData, meta, recovery, source, type]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+};
+
+AppContextProvider.propTypes = {
+  children: PropTypes.any,
 };

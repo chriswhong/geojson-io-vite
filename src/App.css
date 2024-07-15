@@ -14,3 +14,19 @@ body,
 .file-drop-dragging-over-target {
   opacity: 0.6;
 }
+
+.mapbox-gl-draw_polygon {
+  background-image: url("./assets/polygon.svg");
+}
+
+.mapbox-gl-draw_rectangle {
+  background-image: url("./assets/rectangle.svg");
+}
+
+.mapbox-gl-draw_circle {
+  background-image: url("./assets/circle.svg");
+}
+
+.mapboxgl-ctrl-group button {
+  border-radius: 0;
+}

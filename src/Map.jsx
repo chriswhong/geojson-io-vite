@@ -1,13 +1,23 @@
-import React, { useRef, useEffect, useState, useContext } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
-import mapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
+import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
+import MapboxDraw from "@mapbox/mapbox-gl-draw";
+import DrawLineString from "./draw/linestring";
+import DrawRectangle from "./draw/rectangle";
+import DrawCircle from "./draw/circle";
+import SimpleSelect from "./draw/simple_select";
+import ExtendDrawBar from "./draw/extend_draw_bar";
+import drawStyles from "./draw/styles";
+import geojsonRewind from "@mapbox/geojson-rewind";
+
+import { EditControl, SaveCancelControl, TrashControl } from "./controls";
 
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
+import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
+
 import accessToken from "./access-token";
 import {
-  DEFAULT_STYLE,
-  DEFAULT_PROJECTION,
   DEFAULT_DARK_FEATURE_COLOR,
   DEFAULT_LIGHT_FEATURE_COLOR,
   DEFAULT_SATELLITE_FEATURE_COLOR,
@@ -18,11 +28,9 @@ import { addIds, zoomextent, dummyGeojson } from "./map-utils";
 mapboxgl.accessToken = accessToken;
 
 const Map = () => {
-  const mapContainer = useRef(null);
-  const geocoderRef = useRef(null);
-
   const {
     mapData: data,
+    setMapData: _setMapData,
     recovery,
     setRecovery,
     map,
@@ -30,6 +38,52 @@ const Map = () => {
     styleLoaded,
     setStyleLoaded,
   } = useAppContext();
+
+  const mapContainer = useRef(null);
+  const drawRef = useRef();
+  const mapDataRef = useRef(data);
+
+  const [drawing, setDrawing] = useState(false);
+
+  const setMapData = (d) => {
+    mapDataRef.current = d;
+    _setMapData(d);
+  };
+
+  const update = useCallback(
+    (features) => {
+      let FC = {
+        type: "FeatureCollection",
+        features: [...mapDataRef.current.features, ...features],
+      };
+
+      FC = geojsonRewind(FC);
+      setMapData(FC);
+    },
+    [data],
+  );
+
+  const stripIds = (features) => {
+    return features.map((feature) => {
+      delete feature.id;
+      return feature;
+    });
+  };
+
+  const created = useCallback(
+    (e) => {
+      drawRef.current.deleteAll();
+      update(stripIds(e.features));
+
+      // delay setting drawing back to false after a drawn feature is created
+      // this allows the map click handler to ignore the click and prevents a popup
+      // if the drawn feature endeds within an existing feature
+      setTimeout(() => {
+        setDrawing(false);
+      }, 500);
+    },
+    [data],
+  );
 
   useEffect(() => {
     const theMap = new mapboxgl.Map({
@@ -41,20 +95,103 @@ const Map = () => {
       hash: true,
     });
 
-    const geocoder = new mapboxGeocoder({
-      accessToken: mapboxgl.accessToken,
-      mapboxgl: mapboxgl,
-    });
-    theMap.addControl(geocoder);
+    if (true) {
+      theMap.addControl(
+        new MapboxGeocoder({
+          accessToken: mapboxgl.accessToken,
+          mapboxgl,
+          marker: true,
+        }),
+      );
 
-    if (geocoderRef) {
-      geocoderRef.current = geocoder;
+      const draw = (drawRef.current = new MapboxDraw({
+        displayControlsDefault: false,
+        modes: {
+          ...MapboxDraw.modes,
+          simple_select: SimpleSelect,
+          direct_select: MapboxDraw.modes.direct_select,
+          draw_line_string: DrawLineString,
+          draw_rectangle: DrawRectangle,
+          draw_circle: DrawCircle,
+        },
+        controls: {},
+        styles: drawStyles,
+      }));
+
+      const drawControl = new ExtendDrawBar({
+        draw,
+        buttons: [
+          {
+            on: "click",
+            action: () => {
+              setDrawing(true);
+              draw.changeMode("draw_point");
+            },
+            classes: ["mapbox-gl-draw_ctrl-draw-btn", "mapbox-gl-draw_point"],
+            title: "Draw Point (m)",
+          },
+          {
+            on: "click",
+            action: () => {
+              setDrawing(true);
+              draw.changeMode("draw_line_string");
+            },
+            classes: ["mapbox-gl-draw_ctrl-draw-btn", "mapbox-gl-draw_line"],
+            title: "Draw LineString (l)",
+          },
+          {
+            on: "click",
+            action: () => {
+              setDrawing(true);
+              draw.changeMode("draw_polygon");
+            },
+            classes: ["mapbox-gl-draw_ctrl-draw-btn", "mapbox-gl-draw_polygon"],
+            title: "Draw Polygon (p)",
+          },
+          {
+            on: "click",
+            action: () => {
+              setDrawing(true);
+              draw.changeMode("draw_rectangle");
+            },
+            classes: [
+              "mapbox-gl-draw_ctrl-draw-btn",
+              "mapbox-gl-draw_rectangle",
+            ],
+            title: "Draw Rectangular Polygon (r)",
+          },
+          {
+            on: "click",
+            action: () => {
+              setDrawing(true);
+              draw.changeMode("draw_circle");
+            },
+            classes: ["mapbox-gl-draw_ctrl-draw-btn", "mapbox-gl-draw_circle"],
+            title: "Draw Circular Polygon (c)",
+          },
+        ],
+      });
+
+      theMap.addControl(new mapboxgl.NavigationControl());
+
+      theMap.addControl(drawControl, "top-right");
+
+      const editControl = new EditControl();
+      theMap.addControl(editControl, "top-right");
+
+      const saveCancelControl = new SaveCancelControl();
+
+      theMap.addControl(saveCancelControl, "top-right");
+
+      const trashControl = new TrashControl();
+
+      theMap.addControl(trashControl, "top-right");
     }
-
-    theMap.addControl(new mapboxgl.NavigationControl());
 
     theMap.on("load", () => {
       setStyleLoaded(true);
+
+      theMap.on("draw.create", created);
 
       if (!theMap.getSource("map-data")) {
         const { name } = theMap.getStyle();
